@@ -8,34 +8,69 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import axios from 'axios';
 
-const LoginScreen = ({ setUser, registeredUser, setRegisteredUser }) => {
+const BASE_URL = "http://192.168.1.7:8000/api"; // Updated base URL
+
+const LoginScreen = ({ setUser }) => {
   const [operatorId, setOperatorId] = useState('');
   const [keycode, setKeycode] = useState('');
   const [name, setName] = useState('');
   const [isRegister, setIsRegister] = useState(false);
 
-  const handleLogin = () => {
-    // Temporarily allow login with any data
-    if (operatorId && keycode) {
-      setUser({ name: 'User' });
+  const handleLogin = async () => {
+  try {
+    const response = await axios.post(`${BASE_URL}/login/`, {
+      operator_id: operatorId,
+      keycode: keycode
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true
+    });
+    
+    if (response.data.status === 'success') {
+      setUser({ 
+        name: response.data.data.name,
+        operatorId: response.data.data.operator_id
+      });
     } else {
-      Alert.alert('Login Failed', 'Please enter Operator ID and Keycode.');
+      Alert.alert('Login Failed', response.data.message);
     }
-  };
+  } catch (error) {
+    Alert.alert('Error', error.response?.data?.message || 'Failed to connect to server');
+    console.error(error);
+  }
+};
 
-  const handleRegister = () => {
-    if (name && operatorId && keycode) {
-      setRegisteredUser({ name, operatorId, keycode });
+const handleRegister = async () => {
+  try {
+    const response = await axios.post(`${BASE_URL}/register/`, {
+      name: name,
+      operator_id: operatorId,
+      keycode: keycode
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true
+    });
+    
+    if (response.data.status === 'success') {
       setName('');
       setOperatorId('');
       setKeycode('');
       setIsRegister(false);
       Alert.alert('Success', 'Registered successfully. Please log in.');
     } else {
-      Alert.alert('Incomplete', 'Please fill in all fields to register.');
+      Alert.alert('Registration Failed', response.data.message);
     }
-  };
+  } catch (error) {
+    Alert.alert('Error', error.response?.data?.message || 'Failed to connect to server');
+    console.error(error);
+  }
+};
 
   return (
     <View style={styles.container}>
